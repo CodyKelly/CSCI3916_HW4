@@ -109,28 +109,51 @@ router.post("/signin", function (req, res) {
 router
   .route("/reviews")
   .post(authJwtController.isAuthenticated, (req, res) => {
-    Review.create(req.body, (error) => {
-      if (error) {
-        res.send({
-          success: false,
-          message: error,
-        });
-      } else {
+    newReview = new Review(req.body);
+    newReview.save().then(
+      () => {
         Movie.findById(req.body.movie_id, (movErr, movie) => {
-          if (movie) {
-            res.status(201).send({
-              success: true,
-              message: "Review created.",
-            });
-          } else {
-            res.status(400).send({
-              success: false,
-              message: "No movie found with ID " + req.body.movie_id,
-            });
-          }
+          Review.aggregate(
+            [
+              {
+                $match: {
+                  movie_id: mongoose.Types.ObjectId(req.body.movie_id),
+                },
+              },
+            ],
+            (err, reviews) => {
+              avgRating = 0;
+
+              reviews.forEach((review) => {
+                avgRating += review.rating;
+              });
+
+              avgRating /= reviews.length;
+
+              movie.update({ avg_rating: avgRating }, (err, raw) => {
+                if (err) {
+                  console.log(err);
+                }
+                if (raw) {
+                  console.log(raw);
+                }
+              });
+            }
+          );
+
+          res.status(201).send({
+            success: true,
+            message: "Review created.",
+          });
+        });
+      },
+      () => {
+        res.status(201).send({
+          success: false,
+          message: "Review not created.",
         });
       }
-    });
+    );
   })
   .get((req, res) => {
     Review.find((err, reviewList) => {
@@ -195,7 +218,7 @@ router
         } else {
           res.json(movies);
         }
-      });
+      }).sort({});
     }
   });
 
@@ -235,7 +258,7 @@ router
       } else {
         if (movie != null) {
           if (req.query.reviews === "true") {
-            returnAggregate();
+            returnAggregate(id);
           } else {
             res.send(movie);
           }
@@ -248,12 +271,12 @@ router
       }
     });
 
-    function returnAggregate() {
+    function returnAggregate(id) {
       Movie.aggregate(
         [
           {
             $match: {
-              _id: mongoose.Types.ObjectId("5e6fba6640c85f00041fce14"),
+              _id: mongoose.Types.ObjectId(id),
             },
           },
           {

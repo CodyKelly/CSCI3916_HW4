@@ -1,3 +1,5 @@
+var Reviews = require("./Reviews");
+
 var mongoose = require("mongoose");
 var Schema = mongoose.Schema;
 var bcrypt = require("bcrypt-nodejs");
@@ -27,6 +29,7 @@ var MovieScema = new Schema({
     ],
   },
   actors: [ActorSchema],
+  avg_rating: { type: Number },
 });
 
 // return the model
