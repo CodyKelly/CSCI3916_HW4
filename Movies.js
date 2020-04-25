@@ -28,6 +28,7 @@ var MovieScema = new Schema({
       "Western",
     ],
   },
+  image_url: { type: String },
   actors: [ActorSchema],
   avg_rating: { type: Number },
 });
